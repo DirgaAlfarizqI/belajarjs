@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Admin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="kartu-login">
+        <h2>Login Admin</h2>
+        
+        <form id="loginForm">
+            <div class="grup-inputan">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="admin" value="admin" required>
+            </div>
+            
+            <div class="grup-inputan">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="••••••••" value="123" required>
+            </div>
+            
+            <button type="submit" id="tombol-masuk">Masuk</button>
+        </form>
+
+        <div class="area-hasil">
+            <div id="result-login" class="kotak-hasil sembunyi"></div>
+            <div id="result-key" class="kotak-hasil sembunyi"></div>
+            <div id="result-penghasilan" class="kotak-hasil sembunyi"></div>
+        </div>
+    </div>
+
+    <script>
+
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        
+        const hasilLogin = document.getElementById('result-login');
+        const hasilKey = document.getElementById('result-key');
+        const hasilPenghasilan = document.getElementById('result-penghasilan');
+
+        async function apiCall(endpoint, body) {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Terjadi kesalahan jaringan');
+            }
+            return data;
+        }
+
+
+        function bersihkanHasil() {
+            hasilLogin.className = 'kotak-hasil sembunyi';
+            hasilKey.className = 'kotak-hasil sembunyi';
+            hasilPenghasilan.className = 'kotak-hasil sembunyi';
+        }
+
+        function tampilkanHasil(element, message, type = 'sukses') {
+            element.textContent = message;
+            element.className = `kotak-hasil ${type}`;
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            bersihkanHasil(); 
+
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            try {
+                const data1 = await apiCall('/api/login', { username, password });
+                tampilkanHasil(hasilLogin, data1.message); 
+                const user = data1.user;
+
+                const data2 = await apiCall('/api/generate-key', { user });
+                tampilkanHasil(hasilKey, `Key Anda: ${data2.key}`); 
+                const key = data2.key;
+
+                const data3 = await apiCall('/api/get-report', { key });
+                tampilkanHasil(hasilPenghasilan, `Penghasilan: ${data3.data.penghasilan}`); // pakai default 'sukses'
+
+            } catch (err) {
+                tampilkanHasil(hasilLogin, `Error: ${err.message}`, 'gagal');
+            }
+        }
+
+        loginForm.addEventListener('submit', handleLogin);
+    </script>
+</body>
+</html>
